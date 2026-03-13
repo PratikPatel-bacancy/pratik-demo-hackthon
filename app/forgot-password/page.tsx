@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
-import { hasSupabaseEnv, supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -17,11 +17,6 @@ export default function ForgotPasswordPage() {
 
     if (!email) {
       setError('Email is required.');
-      return;
-    }
-
-    if (!supabase) {
-      setError('Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.');
       return;
     }
 
@@ -52,12 +47,6 @@ export default function ForgotPasswordPage() {
         <p className="mt-2 text-center text-sm text-slate-300">
           Enter your email and we&apos;ll send you a password reset link.
         </p>
-
-        {!hasSupabaseEnv ? (
-          <p className="mt-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-            Supabase config missing. Add valid keys in <code className="rounded bg-slate-800 px-1 py-0.5 text-xs">.env.local</code>.
-          </p>
-        ) : null}
 
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
@@ -90,7 +79,7 @@ export default function ForgotPasswordPage() {
 
           <button
             className="inline-flex w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-70"
-            disabled={isSubmitting || !hasSupabaseEnv}
+            disabled={isSubmitting}
             type="submit"
           >
             {isSubmitting ? 'Sending...' : 'Send reset email'}

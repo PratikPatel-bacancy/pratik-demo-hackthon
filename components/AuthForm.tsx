@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { hasSupabaseEnv, supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 type AuthMode = 'login' | 'signup';
 
@@ -24,8 +24,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
     let isMounted = true;
 
     const checkSession = async () => {
-      if (!supabase) return;
-
       const {
         data: { session }
       } = await supabase.auth.getSession();
@@ -36,12 +34,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
     };
 
     checkSession();
-
-    if (!supabase) {
-      return () => {
-        isMounted = false;
-      };
-    }
 
     const {
       data: { subscription }
@@ -99,21 +91,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
     return null;
   };
 
-
-  const toFriendlyError = (message: string) => {
-    const normalized = message.toLowerCase();
-
-    if (normalized.includes('invalid api key') || normalized.includes('apikey')) {
-      return 'Supabase API key is invalid. Verify NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local and restart npm run dev.';
-    }
-
-    if (normalized.includes('invalid login credentials')) {
-      return 'Invalid email or password. Please try again.';
-    }
-
-    return message;
-  };
-
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -123,11 +100,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     if (validationError) {
       setError(validationError);
-      return;
-    }
-
-    if (!supabase) {
-      setError('Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.');
       return;
     }
 
@@ -144,7 +116,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         });
 
         if (signUpError) {
-          setError(toFriendlyError(signUpError.message));
+          setError(signUpError.message);
           return;
         }
 
@@ -164,7 +136,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       });
 
       if (signInError) {
-        setError(toFriendlyError(signInError.message));
+        setError(signInError.message);
         return;
       }
 
@@ -181,14 +153,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
         <h1 className="text-2xl font-semibold text-white">{content.title}</h1>
         <p className="text-sm text-slate-300">{content.subtitle}</p>
       </div>
-
-      {!hasSupabaseEnv ? (
-        <p className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-          Supabase config missing. Create a <code className="rounded bg-slate-800 px-1 py-0.5 text-xs">.env.local</code> with
-          <code className="ml-1 rounded bg-slate-800 px-1 py-0.5 text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and
-          <code className="ml-1 rounded bg-slate-800 px-1 py-0.5 text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
-        </p>
-      ) : null}
 
       <form className="space-y-4" onSubmit={onSubmit}>
         <div className="space-y-2">
@@ -263,7 +227,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
         <button
           className="inline-flex w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={isSubmitting || !hasSupabaseEnv}
+          disabled={isSubmitting}
           type="submit"
         >
           {isSubmitting ? 'Please wait...' : content.button}
