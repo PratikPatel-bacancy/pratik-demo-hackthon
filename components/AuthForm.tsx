@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 type AuthMode = 'login' | 'signup';
@@ -17,7 +17,37 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkSession = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (isMounted && session) {
+        router.replace('/dashboard');
+      }
+    };
+
+    checkSession();
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        router.replace('/dashboard');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
   const content = useMemo(
     () =>
@@ -50,6 +80,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
       return 'Password must be at least 6 characters.';
     }
 
+    if (mode === 'signup' && !confirmPassword) {
+      return 'Please confirm your password.';
+    }
+
     if (mode === 'signup' && password !== confirmPassword) {
       return 'Password and confirm password must match.';
     }
@@ -60,6 +94,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
 
     const validationError = validate();
 
@@ -72,13 +107,21 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const {
+          data: { session },
+          error: signUpError
+        } = await supabase.auth.signUp({
           email,
           password
         });
 
         if (signUpError) {
           setError(signUpError.message);
+          return;
+        }
+
+        if (!session) {
+          setSuccess('Account created. Check your email to confirm your account before logging in.');
           return;
         }
 
@@ -162,11 +205,23 @@ export default function AuthForm({ mode }: AuthFormProps) {
               value={confirmPassword}
             />
           </div>
-        ) : null}
+        ) : (
+          <div className="text-right">
+            <Link className="text-xs text-violet-300 hover:text-violet-200" href="/forgot-password">
+              Forgot password?
+            </Link>
+          </div>
+        )}
 
         {error ? (
           <p className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
             {error}
+          </p>
+        ) : null}
+
+        {success ? (
+          <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+            {success}
           </p>
         ) : null}
 
