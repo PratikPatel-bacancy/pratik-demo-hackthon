@@ -78,4 +78,6 @@ export default function DashboardPage() {
       </div>
     </main>
   );
+export default function DashboardPage() {
+  return <main className="p-6">Dashboard page</main>;
 }

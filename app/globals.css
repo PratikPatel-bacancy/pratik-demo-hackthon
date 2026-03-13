@@ -8,4 +8,9 @@
 
 body {
   @apply min-h-screen bg-slate-950 text-slate-100 antialiased;
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
 }
